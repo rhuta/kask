@@ -1,9 +1,10 @@
-# Kask — Local Multimodal AI Assistant for Android
-
+<img src="screenshots/app_aini_icon512.png" alt="Alternative text" width="50" align="left"> Kask — Local Multimodal AI Assistant for Android
+---
 Kask is a high-performance, **completely offline** AI assistant for Android. It leverages the power of **Qwen 3.5** and **ASR** models to provide Text generation, Vision (image analysis), and ASR (voice transcription) directly on your device.
 
 Built with modern Android standards: Kotlin, Jetpack Compose, Material 3, and Hilt.
-
+---
+![Alternative text](https://github.com/rhuta/kask/blob/main/screenshots/Gemini_feature.png)
 ---
 
 ## Key Features
@@ -19,7 +20,9 @@ Built with modern Android standards: Kotlin, Jetpack Compose, Material 3, and Hi
 -   **Professional Markdown UI**: High-fidelity Markdown rendering for all AI responses, supporting tables, code blocks, and math equations.
 
 ---
-
+![Alternative text](https://github.com/rhuta/kask/blob/main/screenshots/Screenshot_20260716_141043.png)
+![Alternative text](https://github.com/rhuta/kask/blob/main/screenshots/Screenshot_20260716_141406.png)
+![Alternative text](https://github.com/rhuta/kask/blob/main/screenshots/Screenshot_20260716_141544.png)
 ## Architecture
 
 Kask follows a clean, modular architecture:
