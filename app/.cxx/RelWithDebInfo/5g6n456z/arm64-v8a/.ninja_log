@@ -1,0 +1,4 @@
+# ninja log v5
+0	646	1784222158207685698	CMakeFiles/kask_native.dir/native-lib.cpp.o	141a9fc4616db878
+647	659	1784222158225685667	/home/rhuta/Softs/Android/Projects/kask/app/build/intermediates/cxx/RelWithDebInfo/5g6n456z/obj/arm64-v8a/libkask_native.so	b443bdcc60d4220b
+0	2	0	clean	795ea8eeef3283a3

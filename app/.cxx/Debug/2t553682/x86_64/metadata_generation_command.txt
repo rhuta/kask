@@ -1,0 +1,20 @@
+                        -H/home/rhuta/Softs/Android/Projects/kask/app/src/main/cpp
+-DCMAKE_SYSTEM_NAME=Android
+-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+-DCMAKE_SYSTEM_VERSION=29
+-DANDROID_PLATFORM=android-29
+-DANDROID_ABI=x86_64
+-DCMAKE_ANDROID_ARCH_ABI=x86_64
+-DANDROID_NDK=/home/rhuta/Softs/Android/SDK/ndk/27.3.13750724
+-DCMAKE_ANDROID_NDK=/home/rhuta/Softs/Android/SDK/ndk/27.3.13750724
+-DCMAKE_TOOLCHAIN_FILE=/home/rhuta/Softs/Android/SDK/ndk/27.3.13750724/build/cmake/android.toolchain.cmake
+-DCMAKE_MAKE_PROGRAM=/home/rhuta/Softs/Android/SDK/cmake/3.22.1/bin/ninja
+-DCMAKE_CXX_FLAGS=-std=c++23
+-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/rhuta/Softs/Android/Projects/kask/app/build/intermediates/cxx/Debug/2t553682/obj/x86_64
+-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/home/rhuta/Softs/Android/Projects/kask/app/build/intermediates/cxx/Debug/2t553682/obj/x86_64
+-DCMAKE_BUILD_TYPE=Debug
+-B/home/rhuta/Softs/Android/Projects/kask/app/.cxx/Debug/2t553682/x86_64
+-GNinja
+-DANDROID_STL=c++_shared
+                        Build command args: []
+                        Version: 2

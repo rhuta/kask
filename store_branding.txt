@@ -1,0 +1,45 @@
+1. App Title Options (SEO & Clarity)
+
+• Option B (Privacy Focus): AINI: Private & Secure Offline AI Assistant
+
+2. Short Description (80 Characters)
+• Write, read, and organize your files with a private, fully offline AI assistant.
+
+3. Screenshot Captions (Visual Storytelling)
+•
+Screenshot 1 (Home): "Private Intelligence. No Internet Required."
+•
+Screenshot 2 (Chat/Images): "Analyze Photos and Documents Instantly."
+•
+Screenshot 3 (Voice): "Transcribe Voice to Notes with Local ASR."
+•
+Screenshot 4 (Library): "Your Knowledge, Organized. Pinned & Starred."
+•
+Screenshot 5 (Settings): "Optimized for Your Device. Fast & Lean."
+
+4. First-Run Onboarding Flow
+To prevent user confusion regarding the 2GB+ model download, we must use a Guided Setup instead of dropping them onto an empty Home screen.
+Step 1: The Privacy Promise
+• Visual: Shield icon.
+• Text: "Your data never leaves this phone. AINI is 100% offline, meaning no clouds, no tracking, and total privacy."
+
+Step 2: Hardware Optimization
+• Action: Background scan of RAM and Storage.
+• Text: "We've analyzed your device. We recommend our [Fast 0.5B] model for the best balance of speed and battery life."
+Step 3: The "Brain" Download
+• Visual: Progress bar with a "Stay on Wi-Fi" warning.
+• Text: "Downloading your local AI engine. This is a one-time setup to enable 24/7 access without data costs."
+Step 4: Permission Request
+• Action: Request Camera/Mic/Files only when explained.
+• Text: "Grant access to help AINI read your documents and listen to your notes."
+
+5. Review Improvement Strategy (The "4-Star Guard")
+On-device AI on 4GB RAM devices can be slow. If we don't manage expectations, users will leave 1-star reviews for "slowness."
+
+• Transparency in UI: Replace the generic loading spinner with a Token Counter (e.g., "Generating... 1.5 words/sec"). This shows the user the phone is working hard, turning "lag" into "process."
+
+• The "Heating" Warning: If the phone hits thermal limits, show a polite toast: "AINI is working hard. Taking a short break to keep your device cool." This prevents "Overheated my phone" complaints.
+
+• Proactive Feedback Loop: If a user hasn't successfully generated text in 3 tries, show a help dialog: "Running slow? Try switching to the 'Fast' model in Settings."
+
+• The "No-Internet" Testimonial: Periodically show a small tip: "Did you know? AINI works in Airplane Mode. Try it on your next flight!" This reinforces the unique value proposition.

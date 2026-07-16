@@ -1,0 +1,1 @@
+/home/rhuta/Softs/Android/Projects/kask/app/build/intermediates/cxx/RelWithDebInfo/5g6n456z/obj/arm64-v8a

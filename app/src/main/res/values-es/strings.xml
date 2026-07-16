@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings">Ajustes</string>
+    <string name="library">Biblioteca</string>
+    <string name="history">Historial</string>
+    <string name="home">Inicio</string>
+    <string name="ai_model">Modelo de IA</string>
+    <string name="appearance">Apariencia</string>
+    <string name="dark_mode">Modo Oscuro</string>
+    <string name="chat_font_size">Tamaño de fuente del chat</string>
+    <string name="app_language">Idioma de la aplicación</string>
+    <string name="privacy">Privacidad</string>
+    <string name="save_history">Guardar historial</string>
+    <string name="storage">Almacenamiento</string>
+    <string name="clear_history">Borrar historial</string>
+    <string name="clear_library">Borrar biblioteca</string>
+    <string name="about">Acerca de</string>
+</resources>

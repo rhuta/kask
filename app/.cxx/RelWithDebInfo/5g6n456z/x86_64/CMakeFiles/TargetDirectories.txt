@@ -1,0 +1,3 @@
+/home/rhuta/Softs/Android/Projects/kask/app/.cxx/RelWithDebInfo/5g6n456z/x86_64/CMakeFiles/kask_native.dir
+/home/rhuta/Softs/Android/Projects/kask/app/.cxx/RelWithDebInfo/5g6n456z/x86_64/CMakeFiles/edit_cache.dir
+/home/rhuta/Softs/Android/Projects/kask/app/.cxx/RelWithDebInfo/5g6n456z/x86_64/CMakeFiles/rebuild_cache.dir

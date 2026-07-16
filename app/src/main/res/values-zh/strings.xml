@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings">设置</string>
+    <string name="library">库</string>
+    <string name="history">历史</string>
+    <string name="home">首页</string>
+    <string name="ai_model">AI 模型</string>
+    <string name="appearance">外观</string>
+    <string name="dark_mode">深色模式</string>
+    <string name="chat_font_size">聊天字体大小</string>
+    <string name="app_language">界面语言</string>
+    <string name="privacy">隐私</string>
+    <string name="save_history">保存历史</string>
+    <string name="storage">存储</string>
+    <string name="clear_history">清除历史</string>
+    <string name="clear_library">清除库</string>
+    <string name="about">关于</string>
+</resources>

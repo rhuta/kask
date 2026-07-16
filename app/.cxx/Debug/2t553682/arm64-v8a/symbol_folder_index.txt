@@ -1,0 +1,1 @@
+/home/rhuta/Softs/Android/Projects/kask/app/build/intermediates/cxx/Debug/2t553682/obj/arm64-v8a

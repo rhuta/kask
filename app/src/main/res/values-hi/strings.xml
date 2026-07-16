@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings">सेटिंग्स</string>
+    <string name="library">लाइब्रेरी</string>
+    <string name="history">इतिहास</string>
+    <string name="home">होम</string>
+    <string name="ai_model">एआई मॉडल</string>
+    <string name="appearance">दिखावट</string>
+    <string name="dark_mode">डार्क मोड</string>
+    <string name="chat_font_size">चैट फ़ॉन्ट आकार</string>
+    <string name="app_language">ऐप की भाषा</string>
+    <string name="privacy">गोपनीयता</string>
+    <string name="save_history">इतिहास सहेजें</string>
+    <string name="storage">स्टोरेज</string>
+    <string name="clear_history">इतिहास मिटाएं</string>
+    <string name="clear_library">लाइब्रेरी मिटाएं</string>
+    <string name="about">के बारे में</string>
+</resources>

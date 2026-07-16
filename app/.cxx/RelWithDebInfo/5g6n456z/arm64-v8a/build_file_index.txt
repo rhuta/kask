@@ -1,0 +1,1 @@
+/home/rhuta/Softs/Android/Projects/kask/app/src/main/cpp/CMakeLists.txt
