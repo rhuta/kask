@@ -10,19 +10,20 @@ Built with modern Android standards: Kotlin, Jetpack Compose, Material 3, and Hi
 ## Key Features
 
 -   **Fully Offline**: Your data never leaves your device. All inference is performed locally using `llama.cpp`.
--   **Multimodal Intelligence**:
+-   **Multimodal Intelligence** powered by Qwen3.5 and Qwen3-ASR:
     -   **Text**: Summarize, rewrite, translate, and chat.
     -   **Vision**: "Ask about this image"—analyze and describe photos or screenshots.
-    -   **ASR**: High-accuracy voice-to-text powered by Qwen3-ASR.
+    -   **ASR**: High-accuracy voice-to-text.
 -   **Smart Content Detection**: Attach a PDF, Image, or Audio file, and Kask automatically surfaces the most relevant AI actions.
 -   **Hardware-Aware Engine Tiers**: Automatically scales from **Efficient** (0.8B) to **Precision** (4B) engine tiers based on your device's RAM and storage.
 -   **Local Library & History**: Save your AI results, rename notes, and keep track of your conversation history with local SQLite (Room) storage.
 -   **Professional Markdown UI**: High-fidelity Markdown rendering for all AI responses, supporting tables, code blocks, and math equations.
 
 ---
-![Alternative text](https://github.com/rhuta/kask/blob/main/screenshots/Screenshot_20260716_141043.png)
-![Alternative text](https://github.com/rhuta/kask/blob/main/screenshots/Screenshot_20260716_141406.png)
-![Alternative text](https://github.com/rhuta/kask/blob/main/screenshots/Screenshot_20260716_141544.png)
+
+<img src="https://github.com/rhuta/kask/blob/main/screenshots/Screenshot_20260716_141645.png" width="24%" alt="HomeScreen"> <img src="https://github.com/rhuta/kask/blob/main/screenshots/Screenshot_20260716_141043.png" width="24%" alt="MathEquation">
+<img src="https://github.com/rhuta/kask/blob/main/screenshots/Screenshot_20260716_141406.png" width="24%" alt="Audio"><img src="https://github.com/rhuta/kask/blob/main/screenshots/Screenshot_20260716_141544.png" width="24%" alt="Image">
+
 ## Architecture
 
 Kask follows a clean, modular architecture:
