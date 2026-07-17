@@ -121,8 +121,8 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun downloadAllModels() {
-        if (!modelManager.hasEnoughSpaceForDownload()) {
-            val required = modelManager.getCurrentTier().requiredSpaceBytes / (1024 * 1024 * 1024.0)
+        if (!modelManager.hasEnoughSpaceForDownload(EngineTier.EFFICIENT)) {
+            val required = EngineTier.EFFICIENT.requiredSpaceBytes / (1024 * 1024 * 1024.0)
             _downloadState.value = DownloadState.Error("Not enough storage space (need ${"%.1f".format(required)}GB free)")
             return
         }

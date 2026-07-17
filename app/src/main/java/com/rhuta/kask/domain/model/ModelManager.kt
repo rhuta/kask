@@ -114,10 +114,10 @@ class ModelManager @Inject constructor(
         return (memoryInfo.totalMem / decimalDivisor).roundToInt()
     }
 
-    fun hasEnoughSpaceForDownload(): Boolean {
+    fun hasEnoughSpaceForDownload(tier: EngineTier = EngineTier.EFFICIENT): Boolean {
         val stat = StatFs(context.filesDir.path)
         val availableBytes = stat.availableBlocksLong * stat.blockSizeLong
-        return availableBytes >= getCurrentTier().requiredSpaceBytes
+        return availableBytes >= tier.requiredSpaceBytes
     }
 
     /**
@@ -178,10 +178,10 @@ class ModelManager @Inject constructor(
     }
 
     /**
-     * Sequentially downloads all models needed for the current hardware tier.
+     * Force Efficient model initially for onboarding.
      */
     fun downloadAllModels(): Flow<DownloadStatus> = flow {
-        val tier = getCurrentTier()
+        val tier = EngineTier.EFFICIENT
         val models = getRequiredFilesForTier(tier)
         var completed = 0
         for ((url, dest) in models) {
