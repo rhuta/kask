@@ -100,6 +100,23 @@ fun HomeScreen(
     // Camera permission
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
 
+    // Handle auto-launch after permission is granted
+    var pendingActionAfterPermission by remember { mutableStateOf<String?>(null) }
+    
+    LaunchedEffect(cameraPermission.status) {
+        if (cameraPermission.status.isGranted && pendingActionAfterPermission == "image") {
+            cameraLauncher.launch(null)
+            pendingActionAfterPermission = null
+        }
+    }
+    
+    LaunchedEffect(micPermission.status) {
+        if (micPermission.status.isGranted && pendingActionAfterPermission == "audio") {
+            viewModel.onEvent(HomeEvent.ToggleRecording)
+            pendingActionAfterPermission = null
+        }
+    }
+
     // Haptic feedback for inference events
     LaunchedEffect(uiState.inferenceState) {
         when (uiState.inferenceState) {
@@ -202,11 +219,19 @@ fun HomeScreen(
                             viewModel.onEvent(HomeEvent.TextChanged(suggestion.input))
                             when (suggestion.action) {
                                 "pdf" -> fileLauncher.launch("application/pdf")
-                                "image" -> cameraLauncher.launch(null)
+                                "image" -> {
+                                    if (cameraPermission.status.isGranted) {
+                                        cameraLauncher.launch(null)
+                                    } else {
+                                        pendingActionAfterPermission = "image"
+                                        cameraPermission.launchPermissionRequest()
+                                    }
+                                }
                                 "audio" -> {
                                     if (micPermission.status.isGranted) {
                                         viewModel.onEvent(HomeEvent.ToggleRecording)
                                     } else {
+                                        pendingActionAfterPermission = "audio"
                                         micPermission.launchPermissionRequest()
                                     }
                                 }
