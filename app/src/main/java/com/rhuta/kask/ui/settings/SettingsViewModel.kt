@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rhuta.kask.BuildConfig
 import com.rhuta.kask.data.network.DownloadStatus
 import com.rhuta.kask.data.repository.KaskRepository
 import com.rhuta.kask.domain.model.EngineTier
@@ -43,7 +44,7 @@ data class SettingsUiState(
     val darkMode: Boolean = false,
     val isProUser: Boolean = false,
     val preferredModel: String = "auto",
-    val appVersion: String = "1.0.0",
+    val appVersion: String = BuildConfig.VERSION_NAME,
     val downloadProgress: Float = -1f,
     val isDownloading: Boolean = false,
     val errorMessage: String? = null,
@@ -84,7 +85,8 @@ class SettingsViewModel @Inject constructor(
             isDownloading    = (downloadState is DownloadState.Progress) || (downloadState is DownloadState.Started),
             errorMessage     = if (downloadState is DownloadState.Error) downloadState.message else null,
             hasEnoughSpace   = modelManager.hasEnoughSpaceForDownload(),
-            currentHardwareTier = modelManager.getCurrentTier()
+            currentHardwareTier = modelManager.getCurrentTier(),
+            appVersion       = BuildConfig.VERSION_NAME
         )
     }.stateIn(
         scope = viewModelScope,
