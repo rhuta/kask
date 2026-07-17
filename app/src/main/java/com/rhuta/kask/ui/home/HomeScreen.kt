@@ -182,7 +182,7 @@ fun HomeScreen(
             } else {
                 // ---- Conversation History -----------------------------------
                 uiState.currentConversation.messages.filter { it.role != "system" }.forEach { message ->
-                    ChatBubble(message, settingsState.chatFontSize)
+                    ChatBubble(message, settingsState.chatFontSize, settingsState.darkMode)
                 }
 
                 // ---- Streaming / Loading response ---------------------------
@@ -191,7 +191,8 @@ fun HomeScreen(
                 } else if (uiState.inferenceState is InferenceState.Streaming) {
                     ChatBubble(
                         ChatMessage(role = "assistant", content = uiState.streamingText),
-                        settingsState.chatFontSize
+                        settingsState.chatFontSize,
+                        settingsState.darkMode
                     )
                 }
 
@@ -563,7 +564,7 @@ private fun ThinkingIndicator() {
 }
 
 @Composable
-private fun ChatBubble(message: ChatMessage, fontSize: Float) {
+private fun ChatBubble(message: ChatMessage, fontSize: Float, isDark: Boolean) {
     val isUser = message.role == "user"
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -607,7 +608,7 @@ private fun ChatBubble(message: ChatMessage, fontSize: Float) {
                         // Exactly synchronized with AINI for professional live formatting.
                         MarkdownMessage(
                             content = message.content,
-                            isDark = isSystemInDarkTheme(),
+                            isDark = isDark,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }

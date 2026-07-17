@@ -29,8 +29,7 @@
     "variantName": "debug",
     "isDebuggableEnabled": true,
     "validAbiList": [
-      "arm64-v8a",
-      "x86_64"
+      "arm64-v8a"
     ],
     "buildTargetSet": [],
     "implicitBuildTargetSet": [],
@@ -156,6 +155,7 @@
         "rootBuildGradleFolder": "/home/rhuta/Softs/Android/Projects/kask",
         "sdkFolder": "/home/rhuta/Softs/Android/SDK",
         "isBuildOnlyTargetAbiEnabled": true,
+        "ideBuildTargetAbi": "arm64-v8a,armeabi-v7a,armeabi",
         "isCmakeBuildCohabitationEnabled": false,
         "isPrefabEnabled": false
       },

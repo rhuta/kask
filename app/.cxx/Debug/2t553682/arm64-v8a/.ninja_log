@@ -12,3 +12,5 @@
 1	659	1784228059265674659	CMakeFiles/kask_native.dir/native-lib.cpp.o	42e70d2b4074ed65
 659	680	1784228059293674636	/home/rhuta/Softs/Android/Projects/kask/app/build/intermediates/cxx/Debug/2t553682/obj/arm64-v8a/libkask_native.so	dceca140cf7bf516
 0	1	0	clean	795ea8eeef3283a3
+1	560	1784234884179060056	CMakeFiles/kask_native.dir/native-lib.cpp.o	42e70d2b4074ed65
+560	572	1784234884197060013	/home/rhuta/Softs/Android/Projects/kask/app/build/intermediates/cxx/Debug/2t553682/obj/arm64-v8a/libkask_native.so	dceca140cf7bf516
