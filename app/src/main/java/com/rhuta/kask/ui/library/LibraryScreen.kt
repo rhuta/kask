@@ -3,6 +3,7 @@ package com.rhuta.kask.ui.library
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,22 +20,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rhuta.kask.R
 import com.rhuta.kask.data.db.entities.LibraryEntity
 import com.rhuta.kask.data.db.entities.contentTypeEnum
 import com.rhuta.kask.domain.model.ContentType
 import com.rhuta.kask.ui.components.AiniSearchBar
 import com.rhuta.kask.ui.components.EmptyState
+import com.rhuta.kask.ui.markdown.MarkdownMessage
+import com.rhuta.kask.ui.settings.SettingsViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryScreen(viewModel: LibraryViewModel = hiltViewModel()) {
+fun LibraryScreen(
+    viewModel: LibraryViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel()
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     var itemToRename by remember { mutableStateOf<LibraryEntity?>(null) }
     var itemToDelete by remember { mutableStateOf<LibraryEntity?>(null) }
     var showSortMenu by remember { mutableStateOf(value = false) }
@@ -141,6 +148,7 @@ fun LibraryScreen(viewModel: LibraryViewModel = hiltViewModel()) {
                         items(uiState.items, key = { it.id }) { item ->
                             LibraryCard(
                                 item = item,
+                                isDark = settingsState.darkMode,
                                 onPin = { viewModel.togglePin(item) },
                                 onDelete = { itemToDelete = item },
                                 onRename = { itemToRename = item },
@@ -210,6 +218,7 @@ fun LibraryScreen(viewModel: LibraryViewModel = hiltViewModel()) {
 @Composable
 private fun LibraryCard(
     item: LibraryEntity,
+    isDark: Boolean,
     onPin: () -> Unit,
     onDelete: () -> Unit,
     onRename: () -> Unit,
@@ -222,105 +231,107 @@ private fun LibraryCard(
     }
     val rotationState by animateFloatAsState(targetValue = if (expanded) 180f else 0f, label = "rotation")
 
-    ElevatedCard(
+    // Fixed length truncation (24 characters) and prefix cleaning
+    val displayTitle = remember(item.title) {
+        val cleanTitle = item.title.substringAfter(":").trim()
+        if (cleanTitle.length > 24) cleanTitle.take(21) + "..." else cleanTitle
+    }
+
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .clickable { expanded = !expanded }
+            .padding(vertical = 8.dp)
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            // ROW 1: TITLE + BUTTONS
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(40.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = item.contentTypeEnum().icon(),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
+                    tint = MaterialTheme.colorScheme.primary
                 )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = item.title,
+                    text = displayTitle,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                    maxLines = 1
                 )
-                
-                // Pin Button
-                IconButton(onClick = onPin, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        imageVector = if (item.isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
-                        contentDescription = "Pin",
-                        tint = if (item.isPinned) MaterialTheme.colorScheme.primary 
-                               else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
+                Text(
+                    text = dateStr,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            // Pin Button
+            IconButton(onClick = onPin, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    imageVector = if (item.isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                    contentDescription = "Pin",
+                    tint = if (item.isPinned) MaterialTheme.colorScheme.primary 
+                           else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            // More (3-dots)
+            Box {
+                IconButton(onClick = { showMenu = true }, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Outlined.MoreVert, "More", modifier = Modifier.size(18.dp))
+                }
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Rename") },
+                        leadingIcon = { Icon(Icons.Outlined.Edit, null) },
+                        onClick = { onRename(); showMenu = false }
                     )
-                }
-
-                // More (3-dots)
-                Box {
-                    IconButton(onClick = { showMenu = true }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Outlined.MoreVert, "More", modifier = Modifier.size(20.dp))
-                    }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Rename") },
-                            leadingIcon = { Icon(Icons.Outlined.Edit, null) },
-                            onClick = { onRename(); showMenu = false }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Outlined.Delete,
-                                    null,
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            },
-                            onClick = { onDelete(); showMenu = false }
-                        )
-                    }
-                }
-
-                // Expansion toggle
-                IconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        imageVector = Icons.Outlined.ExpandMore,
-                        contentDescription = "Expand",
-                        modifier = Modifier
-                            .size(22.dp)
-                            .rotate(rotationState)
+                    DropdownMenuItem(
+                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.Delete,
+                                null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        },
+                        onClick = { onDelete(); showMenu = false }
                     )
                 }
             }
 
-            // ROW 2: TIMESTAMP
-            Text(
-                text = dateStr,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 28.dp) // Align with text after icon
+            // Expansion toggle icon (chevron)
+            Icon(
+                imageVector = Icons.Outlined.ExpandMore,
+                contentDescription = "Expand",
+                modifier = Modifier
+                    .size(24.dp)
+                    .rotate(rotationState)
+                    .padding(4.dp)
             )
+        }
 
-            // OPTIONAL: EXPANDED CONTENT
-            AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.padding(top = 12.dp)) {
-                    item.textContent?.let { content ->
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = content,
-                                modifier = Modifier.padding(12.dp),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
+        // EXPANDED CONTENT with Markdown Rendering
+        AnimatedVisibility(visible = expanded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 56.dp, end = 8.dp, top = 8.dp, bottom = 16.dp)
+            ) {
+                item.textContent?.let { content ->
+                    MarkdownMessage(
+                        content = content,
+                        isDark = isDark,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }
@@ -329,14 +340,14 @@ private fun LibraryCard(
 
 private fun LibraryFilter.icon() = when (this) {
     LibraryFilter.ALL -> Icons.Outlined.GridView
-    LibraryFilter.PURE_TEXT -> Icons.AutoMirrored.Outlined.Note
+    LibraryFilter.PURE_TEXT -> Icons.Outlined.TextFields
     LibraryFilter.IMAGES -> Icons.Outlined.Image
     LibraryFilter.DOCUMENTS -> Icons.Outlined.Description
     LibraryFilter.AUDIO -> Icons.Outlined.AudioFile
 }
 
 private fun ContentType.icon() = when (this) {
-    ContentType.TEXT  -> Icons.AutoMirrored.Outlined.Note
+    ContentType.TEXT  -> Icons.Outlined.TextFields
     ContentType.PDF   -> Icons.Outlined.Description
     ContentType.IMAGE -> Icons.Outlined.Image
     ContentType.AUDIO -> Icons.Outlined.AudioFile

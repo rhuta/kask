@@ -17,6 +17,7 @@ import com.rhuta.kask.ui.settings.PrefKeys
 import com.rhuta.kask.ui.settings.settingsDataStore
 import com.rhuta.kask.domain.util.FileUtility
 import com.rhuta.kask.domain.util.MediaTruncator
+import com.rhuta.kask.domain.util.SharedChatContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -71,6 +72,7 @@ sealed class HomeEvent {
     object ConfirmRecording : HomeEvent()
     object CancelRecording : HomeEvent()
     data class ContinueChat(val historyId: String) : HomeEvent()
+    object CheckPendingChat : HomeEvent()
 }
 
 // ---- ViewModel ----------------------------------------------------------
@@ -80,6 +82,7 @@ class HomeViewModel @Inject constructor(
     private val engine: AIEngine,
     private val repository: KaskRepository,
     private val audioRecorder: AudioRecorder,
+    private val sharedChatContext: SharedChatContext,
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context
 ) : ViewModel() {
 
@@ -145,6 +148,7 @@ class HomeViewModel @Inject constructor(
             is HomeEvent.RedoRecording -> handleRedoRecording()
             is HomeEvent.ConfirmRecording -> handleConfirmRecording()
             is HomeEvent.CancelRecording -> handleCancelRecording()
+            is HomeEvent.CheckPendingChat -> handleCheckPendingChat()
         }
     }
 
@@ -200,6 +204,12 @@ class HomeViewModel @Inject constructor(
         timerJob = null
     }
 
+    private fun handleCheckPendingChat() {
+        sharedChatContext.consumePendingChat()?.let { historyId ->
+            handleContinueChat(historyId)
+        }
+    }
+
     private fun handleContinueChat(historyId: String) {
         viewModelScope.launch {
             repository.getHistoryById(historyId)?.let { item ->
@@ -241,15 +251,16 @@ class HomeViewModel @Inject constructor(
             val realName = FileUtility.getFileName(context, uri) ?: fileName
             
             val type = when {
-                mimeType.contains("pdf") || 
+                mimeType.contains("pdf") || realName.endsWith(".pdf", ignoreCase = true) -> ContentType.PDF
                 mimeType.contains("text") || 
                 mimeType.contains("wordprocessingml.document") ||
                 realName.endsWith(".docx", ignoreCase = true) ||
                 realName.endsWith(".pptx", ignoreCase = true) ||
-                realName.endsWith(".xlsx", ignoreCase = true) -> ContentType.PDF
-                mimeType.startsWith("image") || realName.endsWith(".jpg") || realName.endsWith(".jpeg") || realName.endsWith(".png") -> ContentType.IMAGE
-                mimeType.startsWith("audio") || realName.endsWith(".wav") || realName.endsWith(".mp3") || realName.endsWith(".m4a") -> ContentType.AUDIO
-                else -> ContentType.PDF
+                realName.endsWith(".xlsx", ignoreCase = true) ||
+                realName.endsWith(".txt", ignoreCase = true) -> ContentType.TEXT
+                mimeType.startsWith("image") || realName.endsWith(".jpg", ignoreCase = true) || realName.endsWith(".jpeg", ignoreCase = true) || realName.endsWith(".png", ignoreCase = true) -> ContentType.IMAGE
+                mimeType.startsWith("audio") || realName.endsWith(".wav", ignoreCase = true) || realName.endsWith(".mp3", ignoreCase = true) || realName.endsWith(".m4a", ignoreCase = true) -> ContentType.AUDIO
+                else -> ContentType.TEXT
             }
 
             // STREAM TO STORAGE: Ensure stability (Always copy external or content URIs)
@@ -316,7 +327,7 @@ class HomeViewModel @Inject constructor(
                 role = "user",
                 content = input,
                 attachmentUri = currentState.attachedUri?.toString(),
-                attachmentType = currentType.name.lowercase()
+                attachmentType = (currentState.attachedFileName?.substringAfterLast('.', "") ?: "").ifBlank { currentType.name }.lowercase()
             )
             
             val updatedMessages = if (action == TaskAction.TRANSCRIBE) {
@@ -394,14 +405,15 @@ class HomeViewModel @Inject constructor(
                             val limitedMessages = finalMessages.takeLast(11) // Keep up to 10 + system
                             val finalConversation = Conversation(limitedMessages)
                             
-                            val historyId = saveHistory(
-                                action = action,
-                                input = input,
-                                output = fullText,
-                                elapsed = elapsed,
-                                conversation = finalConversation,
-                                contentType = currentType
-                            )
+            val historyId = saveHistory(
+                action = action,
+                input = if (currentState.attachedUri != null) (currentState.attachedFileName ?: input) else input,
+                output = fullText,
+                elapsed = elapsed,
+                conversation = finalConversation,
+                contentType = currentType,
+                attachmentUri = currentState.attachedUri?.toString()
+            )
                             _uiState.update {
                                 it.copy(
                                     inferenceState = InferenceState.Success(fullText, historyId),
@@ -442,7 +454,8 @@ class HomeViewModel @Inject constructor(
         output: String,
         elapsed: Long,
         conversation: Conversation? = null,
-        contentType: ContentType = ContentType.TEXT
+        contentType: ContentType = ContentType.TEXT,
+        attachmentUri: String? = null
     ): String {
         val entry = HistoryEntity(
             contentType = contentType.name,
@@ -450,7 +463,7 @@ class HomeViewModel @Inject constructor(
             inputPreview = input.take(120),
             outputPreview = output.take(120),
             fullOutput = output,
-            inputUri = _uiState.value.attachedUri?.toString(),
+            inputUri = attachmentUri,
             conversationJson = conversation?.let { Json.encodeToString(it) },
             processingTimeMs = elapsed
         )

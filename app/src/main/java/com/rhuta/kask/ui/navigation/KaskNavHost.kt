@@ -3,10 +3,9 @@ package com.rhuta.kask.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
+import com.rhuta.kask.domain.util.SharedChatContext
 import com.rhuta.kask.ui.history.HistoryScreen
 import com.rhuta.kask.ui.home.HomeScreen
 import com.rhuta.kask.ui.library.LibraryScreen
@@ -17,6 +16,7 @@ import com.rhuta.kask.ui.settings.SettingsScreen
 fun KaskNavHost(
     navController: NavHostController,
     isFirstRun: Boolean,
+    sharedChatContext: SharedChatContext,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -34,22 +34,15 @@ fun KaskNavHost(
             )
         }
 
-        composable(
-            route = Screen.Home.route,
-            arguments = listOf(navArgument("continueId") { 
-                type = NavType.StringType
-                nullable = true
-                defaultValue = null
-            })
-        ) { backStack ->
-            val continueId = backStack.arguments?.getString("continueId")
-            HomeScreen(continueId = continueId)
+        composable(Screen.Home.route) {
+            HomeScreen()
         }
 
         composable(Screen.History.route) {
             HistoryScreen(
                 onContinueChat = { historyId ->
-                    navController.navigate(Screen.Home.withContinueId(historyId)) {
+                    sharedChatContext.setPendingChat(historyId)
+                    navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
                 }

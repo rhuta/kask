@@ -45,13 +45,11 @@ import coil.size.Scale
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import androidx.compose.foundation.isSystemInDarkTheme
 import com.rhuta.kask.ui.markdown.MarkdownMessage
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    continueId: String? = null,
     viewModel: HomeViewModel = lifecycleHiltViewModel(),
     settingsViewModel: SettingsViewModel = lifecycleHiltViewModel(),
 ) {
@@ -62,6 +60,11 @@ fun HomeScreen(
     val scrollState = rememberScrollState()
     val focusRequester = remember { FocusRequester() }
     var isMenuExpanded by remember { mutableStateOf(value = false) }
+
+    // Check for pending chat context (from History screen)
+    LaunchedEffect(Unit) {
+        viewModel.onEvent(HomeEvent.CheckPendingChat)
+    }
 
     // File picker
     val fileLauncher = rememberLauncherForActivityResult(
@@ -96,11 +99,6 @@ fun HomeScreen(
     val micPermission = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
     // Camera permission
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
-
-    // Load context if continuing from history
-    LaunchedEffect(continueId) {
-        continueId?.let { viewModel.onEvent(HomeEvent.ContinueChat(it)) }
-    }
 
     // Haptic feedback for inference events
     LaunchedEffect(uiState.inferenceState) {
@@ -622,7 +620,10 @@ private fun ChatBubble(message: ChatMessage, fontSize: Float, isDark: Boolean) {
 
 @Composable
 private fun AttachmentPreview(message: ChatMessage) {
-    if (message.attachmentType == "image") {
+    val ext = message.attachmentType?.lowercase() ?: ""
+    val isImage = ext in listOf("jpg", "jpeg", "png", "webp", "image")
+
+    if (isImage) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(message.attachmentUri)
@@ -649,15 +650,19 @@ private fun AttachmentPreview(message: ChatMessage) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = if (message.attachmentType == "pdf") Icons.Outlined.PictureAsPdf
-                                  else Icons.Outlined.Description,
+                    imageVector = when (val type = message.attachmentType?.lowercase()) {
+                        "pdf" -> Icons.Outlined.PictureAsPdf
+                        "jpg", "jpeg", "png", "webp", "image" -> Icons.Outlined.Image
+                        "wav", "mp3", "m4a", "audio" -> Icons.Outlined.AudioFile
+                        else -> Icons.Outlined.Description
+                    },
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Attached ${message.attachmentType?.uppercase()}",
+                    text = "Attached ${message.attachmentType?.uppercase() ?: "FILE"}",
                     style = MaterialTheme.typography.labelMedium
                 )
             }

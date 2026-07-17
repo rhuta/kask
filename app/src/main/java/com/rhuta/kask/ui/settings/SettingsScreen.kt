@@ -197,6 +197,30 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 }
             )
 
+            ListItem(
+                headlineContent = { Text("Copyright") },
+                supportingContent = { Text("copyright (c) rhuta 2026") },
+                leadingContent = {
+                    Icon(
+                        Icons.Outlined.Copyright,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            )
+
+            ListItem(
+                headlineContent = { Text("Contact") },
+                supportingContent = { Text("rhuta@msn.com") },
+                leadingContent = {
+                    Icon(
+                        Icons.Outlined.Email,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            )
+
             Spacer(modifier = Modifier.height(32.dp))
         }
     }

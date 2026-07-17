@@ -27,11 +27,16 @@ import com.rhuta.kask.ui.navigation.BOTTOM_NAV_ITEMS
 import com.rhuta.kask.ui.navigation.Screen
 import com.rhuta.kask.ui.settings.SettingsViewModel
 import com.rhuta.kask.ui.theme.KaskTheme
+import com.rhuta.kask.domain.util.SharedChatContext
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var sharedChatContext: SharedChatContext
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -110,6 +115,7 @@ class MainActivity : ComponentActivity() {
                                 KaskNavHost(
                                     navController = navController,
                                     isFirstRun = isFirstRun,
+                                    sharedChatContext = sharedChatContext,
                                     modifier = Modifier.padding(
                                         start = innerPadding.calculateStartPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                                         end = innerPadding.calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
@@ -160,6 +166,7 @@ class MainActivity : ComponentActivity() {
                             KaskNavHost(
                                 navController = navController,
                                 isFirstRun = isFirstRun,
+                                sharedChatContext = sharedChatContext,
                                 modifier = Modifier.padding(
                                     start = innerPadding.calculateStartPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                                     end = innerPadding.calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),

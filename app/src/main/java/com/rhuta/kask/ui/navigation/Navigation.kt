@@ -9,9 +9,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String) {
     object Onboarding : Screen("onboarding")
-    object Home : Screen("home?continueId={continueId}") {
-        fun withContinueId(id: String) = "home?continueId=$id"
-    }
+    object Home : Screen("home")
     object History : Screen("history")
     object Library : Screen("library")
     object Settings : Screen("settings")

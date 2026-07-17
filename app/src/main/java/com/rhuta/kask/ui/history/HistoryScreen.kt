@@ -269,11 +269,22 @@ private fun HistoryListItem(item: HistoryEntity, onClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
+                val hasAttachment = item.inputUri != null
+                val rawTitle = if (hasAttachment) {
+                    item.inputPreview
+                } else {
+                    "Chat"
+                }
+
+                // Fixed length truncation (e.g., 24 characters)
+                val title = if (rawTitle.length > 24) rawTitle.take(21) + "..." else rawTitle
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = item.taskActionEnum().label(),
+                        text = title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
@@ -281,7 +292,11 @@ private fun HistoryListItem(item: HistoryEntity, onClick: () -> Unit) {
                         shape = MaterialTheme.shapes.extraSmall
                     ) {
                         Text(
-                            text = item.contentTypeEnum().name.lowercase().replaceFirstChar { it.uppercase() },
+                            text = if (hasAttachment) {
+                                item.contentTypeEnum().name.lowercase().replaceFirstChar { it.uppercase() }
+                            } else {
+                                item.taskActionEnum().label()
+                            },
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -289,7 +304,7 @@ private fun HistoryListItem(item: HistoryEntity, onClick: () -> Unit) {
                     }
                 }
                 Text(
-                    text = item.inputPreview,
+                    text = if (hasAttachment) item.taskActionEnum().label() else item.inputPreview,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1

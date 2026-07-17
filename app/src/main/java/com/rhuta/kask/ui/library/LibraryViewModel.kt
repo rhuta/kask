@@ -15,7 +15,7 @@ import kotlinx.coroutines.FlowPreview
 
 enum class LibraryFilter(val label: String) {
     ALL("All"), 
-    PURE_TEXT("Pure Text"), 
+    PURE_TEXT("Text"),
     IMAGES("Images"),
     DOCUMENTS("Docs"), 
     AUDIO("Audio")
