@@ -14,16 +14,38 @@ import javax.inject.Singleton
 import kotlin.math.roundToInt
 
 /**
+ * Metadata for file integrity verification.
+ */
+data class FileIntegrity(
+    val size: Long,
+    val sha256: String
+)
+
+/**
  * SYSTEMATIC ENGINE DEFINITION
  */
 enum class EngineTier(
     val displayName: String,
     val minRamGb: Int,
-    val requiredSpaceBytes: Long
+    val requiredSpaceBytes: Long,
+    val modelIntegrity: FileIntegrity,
+    val projectorIntegrity: FileIntegrity
 ) {
-    EFFICIENT("Efficient Engine", 0, 5 * 1024 * 1024 * 1024L),
-    BALANCED("Balanced Engine", 8, 5 * 1024 * 1024 * 1024L),
-    PRECISION("Precision Engine", 12, 8 * 1024 * 1024 * 1024L)
+    EFFICIENT(
+        "Efficient Engine", 0, 1 * 1024 * 1024 * 1024L,
+        FileIntegrity(542_000_000L, "5299ead9d218984b28aba772079104c3a2d422f579fc02d7b54a5029db515e00"),
+        FileIntegrity(116_000_000L, "5a6b15da0f483b9e320a5b86b787ad1831953dfaa706e2c5d91de830ea70d784")
+    ),
+    BALANCED(
+        "Balanced Engine", 8, 3 * 1024 * 1024 * 1024L,
+        FileIntegrity(1_310_000_000L, "feb20fbfbf34696f8ca13de00211eed61e4272ab9312a6ccb5a12a285f6e7b15"),
+        FileIntegrity(365_000_000L, "526dbf85f350baf3a5107b1f14e629e94571c7cbab4277476fbdaaa8c4a31a64")
+    ),
+    PRECISION(
+        "Precision Engine", 12, 5 * 1024 * 1024 * 1024L,
+        FileIntegrity(2_780_000_000L, "71c4ae76c0154a1cd746c3cda0a10228536446c888fc3647dfd6998fa8cb2862"),
+        FileIntegrity(367_000_000L, "40a4f07d7bbdbb43011d6cf35ef751e4b1829ff47ee8aa4964c6296f571725ad")
+    )
 }
 
 @Singleton
@@ -159,14 +181,23 @@ class ModelManager @Inject constructor(
      * Sequentially downloads all models needed for the current hardware tier.
      */
     fun downloadAllModels(): Flow<DownloadStatus> = flow {
-        val models = getRequiredFilesForTier(getCurrentTier())
+        val tier = getCurrentTier()
+        val models = getRequiredFilesForTier(tier)
         var completed = 0
         for ((url, dest) in models) {
-            if (dest.exists()) {
+            val integrity = when {
+                dest == asrModelFile -> FileIntegrity(484_000_000L, "40d27969c614b4492f330baa41fcc8d00e25264aebbe3f16eaf5e4bd5af35cd5")
+                dest == asrProjectorFile -> FileIntegrity(214_000_000L, "41a342b5e4c514e968cb756de6cd1b7be39eff43c44c57a2ef5fc6522e36603d")
+                dest.name.contains("Projector") || dest.name.contains("mmproj") -> tier.projectorIntegrity
+                else -> tier.modelIntegrity
+            }
+
+            if (isValidFile(dest) && dest.length() == integrity.size) {
                 completed++
                 continue
             }
-            downloadManager.downloadFile(url, dest).collect { status ->
+
+            downloadManager.downloadFile(url, dest, integrity.size, integrity.sha256).collect { status ->
                 when (status) {
                     is DownloadStatus.Progress -> {
                         val overallProgress = (completed.toFloat() + status.progress) / models.size
@@ -188,11 +219,19 @@ class ModelManager @Inject constructor(
         val models = getRequiredFilesForTier(tier)
         var completed = 0
         for ((url, dest) in models) {
-            if (dest.exists()) {
+            val integrity = when {
+                dest == asrModelFile -> FileIntegrity(484_000_000L, "40d27969c614b4492f330baa41fcc8d00e25264aebbe3f16eaf5e4bd5af35cd5")
+                dest == asrProjectorFile -> FileIntegrity(214_000_000L, "41a342b5e4c514e968cb756de6cd1b7be39eff43c44c57a2ef5fc6522e36603d")
+                dest.name.contains("Projector") || dest.name.contains("mmproj") -> tier.projectorIntegrity
+                else -> tier.modelIntegrity
+            }
+
+            if (isValidFile(dest) && dest.length() == integrity.size) {
                 completed++
                 continue
             }
-            downloadManager.downloadFile(url, dest).collect { status ->
+
+            downloadManager.downloadFile(url, dest, integrity.size, integrity.sha256).collect { status ->
                 when (status) {
                     is DownloadStatus.Progress -> {
                         val overallProgress = (completed.toFloat() + status.progress) / models.size

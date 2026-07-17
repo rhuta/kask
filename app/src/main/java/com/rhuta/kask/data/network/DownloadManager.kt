@@ -8,7 +8,9 @@ import kotlinx.coroutines.flow.flowOn
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
+import java.io.FileInputStream
 import java.io.RandomAccessFile
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,15 +19,27 @@ class DownloadManager @Inject constructor(
     private val client: OkHttpClient,
 ) {
     /**
-     * Downloads a file with support for resuming (HTTP Range).
+     * Downloads a file with support for resuming (HTTP Range) and integrity verification.
      */
-    fun downloadFile(url: String, destination: File): Flow<DownloadStatus> = flow {
+    fun downloadFile(
+        url: String, 
+        destination: File, 
+        expectedSize: Long? = null, 
+        expectedHash: String? = null
+    ): Flow<DownloadStatus> = flow {
         var raf: RandomAccessFile? = null
         try {
             emit(DownloadStatus.Started)
             
             // 1. Detect existing progress
-            val existingSize = if (destination.exists()) destination.length() else 0L
+            var existingSize = if (destination.exists()) destination.length() else 0L
+            
+            // RELAXED SECURITY: Only reset if existing file is clearly wrong (e.g., > 110% of expected)
+            if (expectedSize != null && existingSize > (expectedSize * 1.1)) {
+                destination.delete()
+                existingSize = 0L
+            }
+
             Log.d("Kask_Download", "Starting download: $url, Existing size: $existingSize")
 
             // 2. Build Request with Range header if needed
@@ -35,52 +49,108 @@ class DownloadManager @Inject constructor(
             }
             
             val response = client.newCall(requestBuilder.build()).execute()
-            if ((!response.isSuccessful) && (response.code != 206)) {
-                emit(DownloadStatus.Error("Download failed: ${response.code}"))
+            
+            // Handle server refusing Range request (starts from 0)
+            val isResuming = (response.code == 206)
+            if (!response.isSuccessful && !isResuming) {
+                emit(DownloadStatus.Error("Server error: ${response.code}"))
                 return@flow
             }
 
             val body = response.body ?: throw Exception("Empty response body")
             val contentLen = body.contentLength()
-            
-            // 3. Handle Resuming vs. Starting over
-            // 206 = Partial Content (Resuming supported), 200 = OK (Starting over)
-            val isResuming = (response.code == 206)
             val totalBytes = if (isResuming) (existingSize + contentLen) else contentLen
-            val inputStream = body.byteStream()
             
+            // 3. Verify enough space on device
+            // (Handled at higher level, but could double check here)
+            
+            val inputStream = body.byteStream()
             raf = RandomAccessFile(destination, "rw")
+            
             if (isResuming) {
                 raf.seek(existingSize)
-                Log.d("Kask_Download", "Resuming download from $existingSize bytes. Total: $totalBytes")
+                Log.d("Kask_Download", "Resuming from $existingSize. Target: $totalBytes")
             } else {
-                raf.setLength(0) // Start fresh
-                Log.d("Kask_Download", "Server doesn't support resuming or fresh start. Total: $totalBytes")
+                raf.setLength(0)
+                existingSize = 0L
+                Log.d("Kask_Download", "Starting fresh. Target: $totalBytes")
             }
 
-            // 4. Stream data and emit progress
-            val buffer = ByteArray(64 * 1024) // 64KB buffer for faster large file writes
+            // 4. Stream data with robust error handling
+            val buffer = ByteArray(64 * 1024) 
             var bytesRead: Int
-            var totalBytesRead = if (isResuming) existingSize else 0L
+            var totalBytesRead = existingSize
+            var lastUpdate = 0L
 
             while (inputStream.read(buffer).also { bytesRead = it } != -1) {
                 raf.write(buffer, 0, bytesRead)
                 totalBytesRead += bytesRead
                 
-                val progress = if (totalBytes > 0) (totalBytesRead.toFloat() / totalBytes) else -1f
-                emit(DownloadStatus.Progress(progress))
+                // Throttle progress emissions to save UI thread
+                val now = System.currentTimeMillis()
+                if (now - lastUpdate > 200) {
+                    val progress = if (totalBytes > 0) (totalBytesRead.toFloat() / totalBytes) else -1f
+                    emit(DownloadStatus.Progress(progress))
+                    lastUpdate = now
+                }
+            }
+
+            // 5. POST-DOWNLOAD INTEGRITY CHECK
+            emit(DownloadStatus.Progress(0.99f)) // "Finalizing..."
+            
+            // LAYER A: Mandatory Hash Check (Absolute Authority)
+            if (expectedHash != null) {
+                val actualHash = calculateFileHash(destination)
+                if (actualHash == expectedHash) {
+                    emit(DownloadStatus.Finished(destination))
+                    Log.d("Kask_Download", "Hash Verified & Finished: ${destination.name}")
+                    return@flow
+                } else {
+                    // Hash mismatch is definitive proof of corruption
+                    destination.delete()
+                    emit(DownloadStatus.Error("Integrity check failed: Data is corrupted (Hash mismatch)."))
+                    return@flow
+                }
+            }
+
+            // LAYER B: Fuzzy Size Check (Fallback if no hash provided)
+            // Passes if within 90% to 110% of expected range
+            if (expectedSize != null) {
+                val actualSize = destination.length()
+                val minAllowed = (expectedSize * 0.9).toLong()
+                val maxAllowed = (expectedSize * 1.1).toLong()
+                
+                if (actualSize !in minAllowed..maxAllowed) {
+                    destination.delete()
+                    emit(DownloadStatus.Error("File size is outside of valid range (90%-110%)."))
+                    return@flow
+                }
             }
 
             emit(DownloadStatus.Finished(destination))
-            Log.d("Kask_Download", "Download complete: ${destination.absolutePath}")
+            Log.d("Kask_Download", "Size within tolerance & Finished: ${destination.name}")
             
+        } catch (e: java.net.SocketException) {
+            emit(DownloadStatus.Error("Network disconnected. Progress saved."))
         } catch (e: Exception) {
-            Log.e("Kask_Download", "Download crash: ${e.message}", e)
-            emit(DownloadStatus.Error(e.message ?: "Unknown download error"))
+            Log.e("Kask_Download", "Download failure", e)
+            emit(DownloadStatus.Error(e.message ?: "Unknown error"))
         } finally {
             try { raf?.close() } catch (_: Exception) {}
         }
     }.flowOn(Dispatchers.IO)
+
+    private fun calculateFileHash(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val buffer = ByteArray(1024 * 1024) // 1MB buffer for hashing
+        FileInputStream(file).use { input ->
+            var read: Int
+            while (input.read(buffer).also { read = it } != -1) {
+                digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
 }
 
 sealed class DownloadStatus {
