@@ -97,4 +97,4 @@ com.rhuta.kask/
 
 ## License
 
-Apache License 2.0 © rhuta
+Apache License 2.0 © rhuta 2006
