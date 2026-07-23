@@ -29,6 +29,7 @@ object PrefKeys {
     val ANALYTICS_OPT_IN  = booleanPreferencesKey("analytics_opt_in")
     val DARK_MODE         = booleanPreferencesKey("dark_mode")
     val IS_PRO_USER       = booleanPreferencesKey("is_pro_user")
+    val HAS_SKIPPED_ONBOARDING = booleanPreferencesKey("has_skipped_onboarding")
     val PREFERRED_MODEL   = stringPreferencesKey("preferred_model") // "auto", EngineTier.name
 }
 
@@ -43,6 +44,8 @@ data class SettingsUiState(
     val analyticsOptIn: Boolean = false,
     val darkMode: Boolean = false,
     val isProUser: Boolean = false,
+    val hasSkippedOnboarding: Boolean = false,
+    val isInitialized: Boolean = false,
     val preferredModel: String = "auto",
     val appVersion: String = BuildConfig.VERSION_NAME,
     val downloadProgress: Float = -1f,
@@ -59,12 +62,10 @@ class SettingsViewModel @Inject constructor(
     private val repository: KaskRepository,
 ) : ViewModel() {
 
-    private val _downloadState = MutableStateFlow<DownloadState>(DownloadState.Idle)
-
     val uiState: StateFlow<SettingsUiState> = combine(
         context.settingsDataStore.data,
-        _downloadState
-    ) { prefs, downloadState ->
+        modelManager.globalDownloadStatus
+    ) { prefs, downloadStatus ->
         val isPro = prefs[PrefKeys.IS_PRO_USER] ?: false
         val preferredName = prefs[PrefKeys.PREFERRED_MODEL] ?: "auto"
         val resolvedTier = modelManager.getResolvedTier(isPro, preferredName)
@@ -80,10 +81,12 @@ class SettingsViewModel @Inject constructor(
             analyticsOptIn   = prefs[PrefKeys.ANALYTICS_OPT_IN] ?: false,
             darkMode         = prefs[PrefKeys.DARK_MODE]        ?: false,
             isProUser        = isPro,
+            hasSkippedOnboarding = prefs[PrefKeys.HAS_SKIPPED_ONBOARDING] ?: false,
+            isInitialized    = true,
             preferredModel   = preferredName,
-            downloadProgress = if (downloadState is DownloadState.Progress) downloadState.progress else -1f,
-            isDownloading    = (downloadState is DownloadState.Progress) || (downloadState is DownloadState.Started),
-            errorMessage     = if (downloadState is DownloadState.Error) downloadState.message else null,
+            downloadProgress = if (downloadStatus is DownloadStatus.Progress) downloadStatus.progress else -1f,
+            isDownloading    = (downloadStatus is DownloadStatus.Progress) || (downloadStatus is DownloadStatus.Started),
+            errorMessage     = if (downloadStatus is DownloadStatus.Error) downloadStatus.message else null,
             hasEnoughSpace   = modelManager.hasEnoughSpaceForDownload(),
             currentHardwareTier = modelManager.getCurrentTier(),
             appVersion       = BuildConfig.VERSION_NAME
@@ -107,12 +110,14 @@ class SettingsViewModel @Inject constructor(
             val isPro = context.settingsDataStore.data.first()[PrefKeys.IS_PRO_USER] ?: false
             val resolvedTier = modelManager.getResolvedTier(isPro, modelName)
             if (!modelManager.isTierReady(resolvedTier)) {
-                downloadTier(resolvedTier)
+                modelManager.startTierDownload(resolvedTier)
             }
         }
     }
     
     fun toggleProStatus() = save { it[PrefKeys.IS_PRO_USER] = !(it[PrefKeys.IS_PRO_USER] ?: false) }
+
+    fun skipOnboarding() = save { it[PrefKeys.HAS_SKIPPED_ONBOARDING] = true }
 
     fun clearHistory() {
         viewModelScope.launch { repository.clearHistory() }
@@ -123,43 +128,19 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun downloadAllModels() {
+        if (uiState.value.isDownloading) return
+
         if (!modelManager.hasEnoughSpaceForDownload(EngineTier.EFFICIENT)) {
-            val required = EngineTier.EFFICIENT.requiredSpaceBytes / (1024 * 1024 * 1024.0)
-            _downloadState.value = DownloadState.Error("Not enough storage space (need ${"%.1f".format(required)}GB free)")
             return
         }
-        viewModelScope.launch {
-            modelManager.downloadAllModels().collect { status ->
-                updateDownloadState(status)
-            }
-        }
+        modelManager.startBackgroundDownload()
     }
 
     private fun downloadTier(tier: EngineTier) {
-        viewModelScope.launch {
-            modelManager.downloadTier(tier).collect { status ->
-                updateDownloadState(status)
-            }
-        }
-    }
-
-    private fun updateDownloadState(status: DownloadStatus) {
-        _downloadState.value = when (status) {
-            is DownloadStatus.Started -> DownloadState.Started
-            is DownloadStatus.Progress -> DownloadState.Progress(status.progress)
-            is DownloadStatus.Finished -> DownloadState.Idle
-            is DownloadStatus.Error -> DownloadState.Error(status.message)
-        }
+        modelManager.startTierDownload(tier)
     }
 
     private fun save(block: suspend (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         viewModelScope.launch { context.settingsDataStore.edit { block(it) } }
     }
-}
-
-sealed class DownloadState {
-    object Idle : DownloadState()
-    object Started : DownloadState()
-    data class Progress(val progress: Float) : DownloadState()
-    data class Error(val message: String) : DownloadState()
 }

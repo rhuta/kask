@@ -183,6 +183,59 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // ---- Missing Models Warning ---------------------------------
+            if (!settingsState.allModelsDownloaded) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (settingsState.isDownloading) 
+                            MaterialTheme.colorScheme.primaryContainer 
+                        else 
+                            MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                if (settingsState.isDownloading) Icons.Outlined.CloudDownload else Icons.Outlined.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    if (settingsState.isDownloading) "Downloading AI Models..." else "AI Models Missing",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = if (settingsState.isDownloading) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    if (settingsState.isDownloading) 
+                                        "${(settingsState.downloadProgress * 100).toInt()}% • Keep app open" 
+                                    else 
+                                        "Required for offline text, image, and audio AI.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (settingsState.isDownloading) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (!settingsState.isDownloading) {
+                                TextButton(onClick = { settingsViewModel.downloadAllModels() }) {
+                                    Text("Download")
+                                }
+                            }
+                        }
+                        if (settingsState.isDownloading && settingsState.downloadProgress >= 0) {
+                            Spacer(Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = { settingsState.downloadProgress },
+                                modifier = Modifier.fillMaxWidth(),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
 
             if (uiState.recordingStage != RecordingStage.IDLE) {
                 RecordingInterface(

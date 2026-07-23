@@ -17,8 +17,8 @@ android {
         applicationId = "com.rhuta.kask"
         minSdk = 29        // Android 11+ (Matches recompiled Llama ABI)
         targetSdk = 37
-        versionCode = 2
-        versionName = "1.0.7"
+        versionCode = 3
+        versionName = "1.0.8"
 
         ndk {
             // Target only modern 64-bit devices for AI stability

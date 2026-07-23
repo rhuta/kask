@@ -1,9 +1,10 @@
 package com.rhuta.kask.ui.onboarding
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.*
@@ -13,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rhuta.kask.ui.settings.SettingsViewModel
@@ -31,17 +31,21 @@ fun OnboardingScreen(
         }
     }
 
-    Surface(
+    Scaffold(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(32.dp),
+                .padding(padding)
+                .padding(horizontal = 32.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            Spacer(modifier = Modifier.height(48.dp))
+
             Icon(
                 imageVector = Icons.Outlined.AutoAwesome,
                 contentDescription = null,
@@ -55,7 +59,8 @@ fun OnboardingScreen(
                 text = "Welcome to kask",
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -82,7 +87,10 @@ fun OnboardingScreen(
                     message = uiState.errorMessage!!
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = { viewModel.downloadAllModels() }) {
+                Button(
+                    onClick = { viewModel.downloadAllModels() },
+                    shape = MaterialTheme.shapes.medium
+                ) {
                     Text("Retry Download")
                 }
             } else if (uiState.isDownloading) {
@@ -96,7 +104,7 @@ fun OnboardingScreen(
                     shape = MaterialTheme.shapes.large
                 ) {
                     Icon(Icons.Outlined.Download, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(12.dp))
                     Text("Download AI Models")
                 }
                 
@@ -108,6 +116,19 @@ fun OnboardingScreen(
                     color = MaterialTheme.colorScheme.outline
                 )
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            TextButton(
+                onClick = { viewModel.skipOnboarding() }
+            ) {
+                Text(
+                    if (uiState.isDownloading) "Continue to app while downloading"
+                    else "Continue to app without models"
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(48.dp))
         }
     }
 }
@@ -115,17 +136,32 @@ fun OnboardingScreen(
 @Composable
 private fun DownloadInterface(progress: Float) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        CircularProgressIndicator(
-            progress = { if (progress > 0) progress else 0f },
-            modifier = Modifier.size(64.dp),
-            strokeWidth = 6.dp,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        if (progress in 0f..0.98f) {
+            CircularProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.size(64.dp),
+                strokeWidth = 6.dp,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        } else {
+            // Indeterminate for "Starting" (<0) or "Verifying" (0.99)
+            CircularProgressIndicator(
+                modifier = Modifier.size(64.dp),
+                strokeWidth = 6.dp,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
         
         Spacer(modifier = Modifier.height(16.dp))
         
+        val statusText = when {
+            progress < 0 -> "Starting download..."
+            progress >= 0.99f -> "Verifying integrity..."
+            else -> "Downloading models: ${(progress * 100).toInt()}%"
+        }
+
         Text(
-            text = if (progress >= 0) "Downloading models: ${(progress * 100).toInt()}%" else "Starting download...",
+            text = statusText,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold
         )

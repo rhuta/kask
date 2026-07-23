@@ -6,8 +6,15 @@ import android.os.StatFs
 import com.rhuta.kask.data.network.DownloadManager
 import com.rhuta.kask.data.network.DownloadStatus
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -54,6 +61,12 @@ class ModelManager @Inject constructor(
     private val downloadManager: DownloadManager,
 ) {
     val modelsDir = File(context.filesDir, "models")
+
+    private val _globalDownloadStatus = MutableStateFlow<DownloadStatus>(DownloadStatus.Finished(File("")))
+    val globalDownloadStatus: StateFlow<DownloadStatus> = _globalDownloadStatus.asStateFlow()
+
+    private val managerScope = CoroutineScope(Dispatchers.IO + Job())
+    private var activeDownloadJob: Job? = null
 
     // CACHED STATUS FLAGS
     private var _cachedIsHighRam: Boolean? = null
@@ -178,12 +191,34 @@ class ModelManager @Inject constructor(
     }
 
     /**
+     * Start background download of all required models for the efficient tier.
+     * Persistent across ViewModel clearings.
+     */
+    fun startBackgroundDownload() {
+        if (activeDownloadJob?.isActive == true) return
+        activeDownloadJob = managerScope.launch {
+            downloadAllModels().collect { }
+        }
+    }
+
+    /**
+     * Start background download of a specific tier.
+     */
+    fun startTierDownload(tier: EngineTier) {
+        if (activeDownloadJob?.isActive == true) return
+        activeDownloadJob = managerScope.launch {
+            downloadTier(tier).collect { }
+        }
+    }
+
+    /**
      * Force Efficient model initially for onboarding.
      */
     fun downloadAllModels(): Flow<DownloadStatus> = flow {
         val tier = EngineTier.EFFICIENT
         val models = getRequiredFilesForTier(tier)
         var completed = 0
+        _globalDownloadStatus.value = DownloadStatus.Started
         for ((url, dest) in models) {
             val integrity = when {
                 dest == asrModelFile -> FileIntegrity(484_000_000L, "40d27969c614b4492f330baa41fcc8d00e25264aebbe3f16eaf5e4bd5af35cd5")
@@ -198,26 +233,40 @@ class ModelManager @Inject constructor(
             }
 
             downloadManager.downloadFile(url, dest, integrity.size, integrity.sha256).collect { status ->
+                _globalDownloadStatus.value = status
                 when (status) {
                     is DownloadStatus.Progress -> {
                         val overallProgress = (completed.toFloat() + status.progress) / models.size
-                        emit(DownloadStatus.Progress(overallProgress))
+                        val progressStatus = DownloadStatus.Progress(overallProgress)
+                        _globalDownloadStatus.value = progressStatus
+                        emit(progressStatus)
                     }
-                    is DownloadStatus.Error -> emit(status)
+                    is DownloadStatus.Error -> {
+                        _globalDownloadStatus.value = status
+                        emit(status)
+                    }
                     is DownloadStatus.Finished -> {
                         completed++
-                        emit(DownloadStatus.Progress(completed.toFloat() / models.size))
+                        val progressStatus = DownloadStatus.Progress(completed.toFloat() / models.size)
+                        _globalDownloadStatus.value = progressStatus
+                        emit(progressStatus)
                     }
-                    DownloadStatus.Started -> emit(DownloadStatus.Started)
+                    DownloadStatus.Started -> {
+                        _globalDownloadStatus.value = DownloadStatus.Started
+                        emit(DownloadStatus.Started)
+                    }
                 }
             }
         }
-        emit(DownloadStatus.Finished(llm08ModelFile))
+        val finalStatus = DownloadStatus.Finished(llm08ModelFile)
+        _globalDownloadStatus.value = finalStatus
+        emit(finalStatus)
     }
 
     fun downloadTier(tier: EngineTier): Flow<DownloadStatus> = flow {
         val models = getRequiredFilesForTier(tier)
         var completed = 0
+        _globalDownloadStatus.value = DownloadStatus.Started
         for ((url, dest) in models) {
             val integrity = when {
                 dest == asrModelFile -> FileIntegrity(484_000_000L, "40d27969c614b4492f330baa41fcc8d00e25264aebbe3f16eaf5e4bd5af35cd5")
@@ -232,21 +281,34 @@ class ModelManager @Inject constructor(
             }
 
             downloadManager.downloadFile(url, dest, integrity.size, integrity.sha256).collect { status ->
+                _globalDownloadStatus.value = status
                 when (status) {
                     is DownloadStatus.Progress -> {
                         val overallProgress = (completed.toFloat() + status.progress) / models.size
-                        emit(DownloadStatus.Progress(overallProgress))
+                        val progressStatus = DownloadStatus.Progress(overallProgress)
+                        _globalDownloadStatus.value = progressStatus
+                        emit(progressStatus)
                     }
-                    is DownloadStatus.Error -> emit(status)
+                    is DownloadStatus.Error -> {
+                        _globalDownloadStatus.value = status
+                        emit(status)
+                    }
                     is DownloadStatus.Finished -> {
                         completed++
-                        emit(DownloadStatus.Progress(completed.toFloat() / models.size))
+                        val progressStatus = DownloadStatus.Progress(completed.toFloat() / models.size)
+                        _globalDownloadStatus.value = progressStatus
+                        emit(progressStatus)
                     }
-                    DownloadStatus.Started -> emit(DownloadStatus.Started)
+                    DownloadStatus.Started -> {
+                        _globalDownloadStatus.value = DownloadStatus.Started
+                        emit(DownloadStatus.Started)
+                    }
                 }
             }
         }
-        emit(DownloadStatus.Finished(models.last().second))
+        val finalStatus = DownloadStatus.Finished(models.last().second)
+        _globalDownloadStatus.value = finalStatus
+        emit(finalStatus)
     }
 
     // --- ENGINE ACCESSORS ---

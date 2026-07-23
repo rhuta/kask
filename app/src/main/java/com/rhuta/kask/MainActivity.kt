@@ -62,10 +62,19 @@ class MainActivity : ComponentActivity() {
                 }
 
                 KaskTheme(darkTheme = settingsState.darkMode) {
+                    if (!settingsState.isInitialized) {
+                        // Show a blank themed background while loading settings to prevent flicker
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = MaterialTheme.colorScheme.background
+                        ) {}
+                        return@KaskTheme
+                    }
+
                     val navController = rememberNavController()
                     val backStack by navController.currentBackStackEntryAsState()
                     val currentRoute = backStack?.destination?.route
-                    val isFirstRun = !settingsState.allModelsDownloaded
+                    val isFirstRun = !settingsState.allModelsDownloaded && !settingsState.hasSkippedOnboarding
 
                     val configuration = LocalConfiguration.current
                     val useNavDrawer = configuration.screenWidthDp >= 840
